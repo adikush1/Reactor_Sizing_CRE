@@ -1,0 +1,167 @@
+%values of Ca,Cao,Tau
+Cao = [5 6 6 11 14 16 24];
+Ca = [3 1 2 6 10 8 4];
+Tau = [1 50 8 4 20 20 4];
+inverse_rate=zeros(1,7);
+for i=1:7
+    inverse_rate(i)=Tau(i)/(Cao(i)-Ca(i));
+end
+%cubic spline fitting
+curve=csapi(Ca,inverse_rate);
+Ca_intervals = linspace (min(Ca),max(Ca),1000);
+i_r_values = ppval(curve,Ca_intervals);
+
+%-------------------------------------------------------------------------------------------------------------------
+
+%plotting the curve fitted using spline
+
+% Single PFR
+figure(1)
+%subplot(5,1,1);
+%plot(Ca,inverse_rate,'o','MarkerFaceColor','b',Ca_intervals,i_r_values,'LineWidth',2);
+plot(Ca, inverse_rate, 'o', 'MarkerFaceColor', 'r', 'MarkerSize', 8);
+hold on;
+plot(Ca_intervals, i_r_values, 'k', 'LineWidth', 2);
+hold on
+grid on;
+xlabel('Ca');
+ylabel('-1/r_a');
+title('Single PFR');
+%calculating area using trapezoidal rule
+area1 = trapz(Ca_intervals,i_r_values);
+%filling using color
+fill([Ca_intervals fliplr(Ca_intervals)], [zeros(size(i_r_values)) fliplr(i_r_values)], 'g', 'FaceAlpha', 0.8);
+disp(["Volume required for Single PFR =",area1*0.1]);
+%%-------------------------------------------------------------------------------------------------------------------%
+
+%Single CSTR
+
+curve=csapi(Ca,inverse_rate);
+Ca_intervals = linspace (min(Ca),max(Ca),1000);
+i_r_values = ppval(curve,Ca_intervals);
+%plotting the curve fitted using spline
+figure(2)
+%subplot(5,1,2);
+plot(Ca, inverse_rate, 'o', 'MarkerFaceColor', 'r', 'MarkerSize', 8);
+hold on;
+plot(Ca_intervals, i_r_values, 'k', 'LineWidth', 2);
+hold on
+grid on;
+xlabel('Ca');
+ylabel('-1/r_a');
+title('Single CSTR');
+area2=ppval(curve,min(Ca))*(max(Ca)-min(Ca));
+disp(["Volume required for Single CSTR =",area2*0.1]);
+x_fill=linspace(min(Ca_intervals),max(Ca_intervals),1000);
+y_fill=ones(1,1000)*ppval(curve,min(Ca_intervals));
+fill([min(Ca_intervals), x_fill, max(Ca_intervals)],[0, y_fill, 0], 'g', 'FaceAlpha', 0.8);
+
+%-------------------------------------------------------------------------------------------------------------------
+% Two MFR
+
+curve=csapi(Ca,inverse_rate);
+Ca_intervals = linspace (min(Ca),max(Ca),1000);
+i_r_values = ppval(curve,Ca_intervals);
+%plotting the curve fitted using spline
+%subplot(5,1,3);
+figure(3)
+plot(Ca, inverse_rate, 'o', 'MarkerFaceColor', 'r', 'MarkerSize', 8);
+hold on;
+plot(Ca_intervals, i_r_values, 'k', 'LineWidth', 2);
+hold on
+grid on;
+xlabel('Ca');
+ylabel('-1/r_a');
+title('TWO MFRs');
+mini=100000;
+Ca_val=min(Ca);
+for i=min(Ca):(max(Ca)-min(Ca))/1000:max(Ca)
+    curr_area=((i-min(Ca))*ppval(curve,min(Ca)))+((ppval(curve,i)*max(Ca)-i));
+    mini=min(mini,curr_area);
+    if mini==curr_area
+        Ca_val=i;
+    end
+end
+disp(["Volume required for the combination of TWO MFRs",mini*0.1]);
+%disp(Ca_val);
+x_fill=linspace(min(Ca),Ca_val,1000);
+y_fill=ones(1,1000)*ppval(curve,min(Ca));
+fill([min(Ca) x_fill Ca_val],[0 y_fill 0],'g', 'FaceAlpha', 0.8);
+x_fill1=linspace(Ca_val,max(Ca),1000);
+y_fill1=ones(1,1000)*ppval(curve,Ca_val);
+fill([Ca_val x_fill1 max(Ca)],[0 y_fill1 0],'g', 'FaceAlpha', 0.8);
+
+%%-------------------------------------------------------------------------------------------------------------------%
+
+% Combination of MFR and PFR
+
+
+curve=csapi(Ca,inverse_rate);
+Ca_intervals = linspace (min(Ca),max(Ca),1000);
+i_r_values = ppval(curve,Ca_intervals);
+%plotting the curve fitted using spline
+%subplot(5,1,3);
+figure(4)
+plot(Ca, inverse_rate, 'o', 'MarkerFaceColor', 'r', 'MarkerSize', 8);
+hold on;
+plot(Ca_intervals, i_r_values, 'k', 'LineWidth', 2);
+hold on
+grid on;
+xlabel('Ca');
+ylabel('-1/r_a');
+title('Combination of MFR and PFR');
+f=@(Ca)ppval(curve,Ca);
+Ca_min=fminbnd(f,Ca(1),Ca(end));
+min_i_r=ppval(curve,Ca_min);
+%disp(Ca_min);
+%disp(min_i_r);
+x_fill2=linspace(min(Ca),Ca_min,1000);
+y_fill2=zeros(1,1000);
+for i=1:1000
+    y_fill2(i)=ppval(curve,x_fill2(i));
+end
+
+fill([min(Ca) x_fill2 Ca_min],[0 y_fill2 0],'g', 'FaceAlpha', 0.8);
+x_fill3=linspace(Ca_min,max(Ca),1000);
+y_fill3=ones(1,1000)*min_i_r;
+fill([Ca_min x_fill3 max(Ca)], [0 y_fill3 0],'g','FaceAlpha',0.8);
+areaf=trapz(x_fill2,y_fill2)+((max(Ca)-Ca_min)*min_i_r);
+disp(["Volume required for Combination of MFR and PFR",0.1*areaf]);
+
+%-------------------------------------------------------------------------------------------------------------------
+
+% PFR With Recycle
+curve=csapi(Ca,inverse_rate);
+Ca_intervals = linspace (min(Ca),max(Ca),1000);
+i_r_values = ppval(curve,Ca_intervals);
+%plotting the curve fitted using spline
+%subplot(5,1,3);
+figure(5)
+plot(Ca, inverse_rate, 'o', 'MarkerFaceColor', 'r', 'MarkerSize', 8);
+hold on;
+plot(Ca_intervals, i_r_values, 'k', 'LineWidth', 2);
+hold on
+grid on;
+xlabel('Ca');
+ylabel('-1/r_a');
+title('PFR with Recycle');
+f=@(Ca_intervals)ppval(curve,Ca_intervals);
+%tol=input;
+Ca_r=1;
+minm=999999;
+for i=2:1:1000
+    ar=integral(f,Ca_intervals(1),Ca_intervals(i))/((Ca_intervals(i)-Ca_intervals(1)));
+    if abs(ppval(curve,Ca_intervals(i))-ar)<=minm
+        minm=abs(ppval(curve,Ca_intervals(i))-ar);
+        Ca_r=Ca_intervals(i);
+    
+    end  
+
+end
+disp(["Volume required for PFR with recycle",f(Ca_r)*(max(Ca)-min(Ca))*0.1]);
+disp(["Recycle Ratio", (max(Ca)-Ca_r)/(Ca_r-min(Ca))]);
+disp(["Concentration", Ca_r])
+
+x_fill4=Ca_intervals;
+y_fill4=ones(1,1000)*f(Ca_r);
+fill([min(Ca_intervals) x_fill4 max(Ca_intervals)],[0 y_fill4 0],'g','FaceAlpha',0.8);
